@@ -18,7 +18,7 @@
 - 僵尸逆光时几乎是剪影，摊子的灯只照到 5 米内。
 - 帧率低于 20 帧时游戏整体变慢（每帧时间封顶 1/20 秒），不是跳帧。
 - 僵尸模型和配乐沿用《守护夜排档》的素材，许可证同样待解决（见 assets.md）。
-- 还没有部署地址：需要在 Vercel 里导入本仓库（构建命令 `npm run build`，输出 `dist/`）。
+- 部署：GitHub Pages（`.github/workflows/pages.yml`，推 `main` 自动构建发布），地址 https://tonywoo.github.io/toss-ing-dead/ 。需要仓库 Settings → Pages 的 Source 选「GitHub Actions」。
 
 ## 调试
 

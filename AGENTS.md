@@ -23,6 +23,8 @@ npm run build
 npm run verify   # check + build + test
 ```
 
+推 `main` 后 GitHub Actions 自动部署到 GitHub Pages：https://tonywoo.github.io/toss-ing-dead/
+
 ## 规则
 
 - 数值只写在 `src/tune.js`。`src/rules.js`、`src/ring/physics.js`、`layoutField` 是纯逻辑，不导入 THREE、不碰 DOM。
