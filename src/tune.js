@@ -13,6 +13,8 @@ export const TUNE = {
     maxBounces: 3, // after this many rim hits the ring just drops
     cooldown: 0.55, // seconds between throws
     settle: 2.5, // seconds a missed ring lies on the ground before it fades
+    spin: 16, // rad/s the ring spins flat in its own plane, like a thrown disc
+    spinStop: 0.6, // seconds for the spin to die down once the ring is down
   },
 
   // ---- how a throw is made ----

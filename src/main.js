@@ -46,12 +46,32 @@ const ringGeo = new THREE.TorusGeometry(
   10,
   40,
 );
+// bamboo with dark nodes and red tape bands: a plain ring would not show that it spins
+function ringTexture() {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 16;
+  const g = c.getContext("2d");
+  g.fillStyle = "#c9a25c";
+  g.fillRect(0, 0, 256, 16);
+  for (let i = 0; i < 8; i++) {
+    const x = i * 32;
+    g.fillStyle = i % 2 ? "#5a3a1a" : "#b3261e"; // node, tape, node, tape...
+    g.fillRect(x, 0, i % 2 ? 3 : 10, 16);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
 const ringMat = new THREE.MeshStandardMaterial({
-  color: 0xc9a25c,
+  map: ringTexture(),
   roughness: 0.55,
   metalness: 0.0,
 });
-const flying = []; // { ring, mesh, age, fade }
+const TUBE = (TUNE.ring.outer - TUNE.ring.inner) / 2;
+const MID = (TUNE.ring.inner + TUNE.ring.outer) / 2;
+const flying = []; // { ring, mesh, age, fade, spin, spinRate }
 const origin = TUNE.throw.origin;
 
 function makeRingMesh() {
@@ -105,7 +125,15 @@ aim.onThrow = (yaw, charge) => {
   if (!run.canThrow() || cooldown > 0) return;
   cooldown = TUNE.ring.cooldown;
   const ring = createRing(origin, launchVelocity(yaw, charge, TUNE));
-  flying.push({ ring, mesh: makeRingMesh(), age: 0, fade: 0 });
+  const spinRate = TUNE.ring.spin * (Math.random() < 0.5 ? -1 : 1);
+  flying.push({
+    ring,
+    mesh: makeRingMesh(),
+    age: 0,
+    fade: 0,
+    spin: 0,
+    spinRate,
+  });
   audio.play("throw");
 };
 
@@ -131,10 +159,18 @@ function updateRings(dt) {
         handle(run.throwResult({ type: "miss" }));
       }
     }
-    const { pos, tilt, spin, state } = f.ring;
-    f.mesh.position.set(pos.x, pos.y + 0.015, pos.z);
-    // lies flat (torus is built in the XY plane) with a wobble while flying
-    f.mesh.rotation.set(-Math.PI / 2 + (tilt?.x || 0), spin || 0, tilt?.z || 0);
+    const { pos, tilt, state } = f.ring;
+    // spins flat while flying; once down the spin dies away
+    if (state !== "flying") f.spinRate *= Math.exp(-dt / TUNE.ring.spinStop);
+    f.spin += f.spinRate * dt;
+    // The torus is built in the XY plane: Z spins it in its own plane, then the small tilts,
+    // then X lays it flat. (Spinning about Y instead stood it on edge and into the ground.)
+    const tx = tilt?.x || 0;
+    const tz = tilt?.z || 0;
+    f.mesh.rotation.set(-Math.PI / 2 + tx, tz, f.spin);
+    // keep the lowest point of a tilted ring above the ground (and its centre above the prize base)
+    const lift = TUBE + MID * Math.sin(Math.min(1, Math.hypot(tx, tz)));
+    f.mesh.position.set(pos.x, Math.max(pos.y, 0) + lift + 0.003, pos.z);
     if (state !== "flying") f.fade += dt;
     const gone =
       (state === "grounded" && f.fade > TUNE.ring.settle) ||
@@ -283,6 +319,7 @@ window.__G = {
   TUNE,
   aim,
   marker,
+  THREE,
   field: () => field,
   rings: () => flying,
 };

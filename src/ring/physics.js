@@ -13,8 +13,7 @@ const REST_Y = 0.02;
 const GROUND_Y = 0.01;
 // Gap added when a rim hit pushes the ring out, so the next step does not hit the rim again.
 const NUDGE = 0.005;
-// Flight visuals: spin rate (rad/s) and the sideways lean that follows the velocity.
-const SPIN_RATE = 9;
+// Flight visuals: the sideways lean that follows the velocity (the spin rate is tune.ring.spin).
 const TILT_GAIN = 0.03;
 const TILT_MAX = 0.4;
 const WOBBLE = 0.06;
@@ -80,7 +79,7 @@ export function stepRing(ring, dt, prizes, windX, tune) {
   }
   if (ring.state !== "flying") return events;
 
-  ring.spin += SPIN_RATE * dt;
+  ring.spin += tune.ring.spin * dt;
   ring.tilt.x =
     clamp(-ring.vel.z * TILT_GAIN, -TILT_MAX, TILT_MAX) +
     WOBBLE * Math.sin(ring.spin * 2);
