@@ -13,6 +13,7 @@ import { createAim } from "./ring/aim.js";
 import { createStage } from "./world/stage.js";
 import { createPrizes, layoutField } from "./world/prizes.js";
 import { createZombies } from "./world/zombies.js";
+import { createStubZombies } from "./world/stubzombies.js";
 import { createAudio } from "./audio.js";
 import { createHud } from "./ui/hud.js";
 import { t } from "./i18n/index.js";
@@ -30,14 +31,33 @@ const aim = createAim(canvas, TUNE);
 const run = createRun(TUNE);
 aim.enabled = false;
 
-// zombies load in the background; the title screen is up meanwhile
+// Errors stay on screen: the game is tested on phones, where there is no console to read.
+const errors = [];
+function report(what) {
+  const text = String((what && (what.message || what.reason)) || what);
+  console.error(what);
+  errors.push(text);
+  window.__fatal = errors[0];
+  hud.showError(errors.slice(-2).join(" | "));
+}
+window.addEventListener("error", (e) => report(e.error || e.message));
+window.addEventListener("unhandledrejection", (e) =>
+  report(e.reason || "unhandled rejection"),
+);
+
+// Zombies load while the title is up; 开档 waits for them, so no run has undrawn dead.
+// If the models cannot load, box stand-ins take their place and the error is shown.
 let zombies = null;
-createZombies(THREE, scene, BASE)
+hud.setLoading(true);
+createZombies(THREE, scene, BASE, {
+  maxTexture: stage.quality === "low" ? 1024 : 0,
+})
   .then((z) => (zombies = z))
   .catch((e) => {
-    console.error(e);
-    window.__fatal = String((e && e.message) || e);
-  });
+    report(e);
+    zombies = createStubZombies(THREE, scene);
+  })
+  .finally(() => hud.setLoading(false));
 
 // ---------- rings ----------
 const ringGeo = new THREE.TorusGeometry(
@@ -229,6 +249,7 @@ function handle(events) {
     switch (e.type) {
       case "roundStart":
         newField();
+        aim.setPeriod(TUNE.rounds[e.round].chargePeriod);
         stage.setWind(e.windX);
         audio.setRound(e.round, !!run.state.horde);
         hud.toast(run.state.horde ? "toast.horde" : "toast.round", {

@@ -6,6 +6,7 @@ export default {
   "title.eyebrow": "TOSS-ING DEAD",
   "title.tagline": "三圈十蚊，套不中就被抓。",
   "title.start": "开档",
+  "title.loading": "备料中…",
   "title.help.mouse": "移动鼠标瞄准 · 按住蓄力 · 松开出手",
   "title.help.touch": "按住蓄力 · 左右拖动瞄准 · 松开出手",
 

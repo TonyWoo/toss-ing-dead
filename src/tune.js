@@ -24,7 +24,7 @@ export const TUNE = {
     minSpeed: 3.2, // speed at charge 0 (lands about 2.3 m out)
     maxSpeed: 6.6, // speed at charge 1 (lands about 5.8 m out)
     yawMaxDeg: 24, // aim left/right limit
-    chargePeriod: 1.3, // seconds for the power meter to go 0 → 1 → 0 while held
+    chargePeriod: 2.8, // seconds for the meter to go 0 → 1 → 0 (round 1; each round sets its own)
     wobble: 0.015, // random speed spread (fraction) so a perfect meter is still not certain
     previewFraction: 1, // how much of the arc the aim preview shows (all of it: Dash 2026-11-18)
   },
@@ -73,13 +73,20 @@ export const TUNE = {
     spacing: 1.2, // min distance between two zombies
   },
 
-  // ---- the night: five rounds ("上菜") ----
+  // ---- the night: five rounds ("上菜"). chargePeriod: the power meter starts slow and quickens ----
   rounds: [
-    { target: 3, alive: 1, creep: 0.28, spawnEvery: 6 },
-    { target: 4, alive: 2, creep: 0.26, spawnEvery: 5 },
-    { target: 5, alive: 3, creep: 0.3, spawnEvery: 4.5 },
-    { target: 6, alive: 4, creep: 0.34, spawnEvery: 4 },
-    { target: 8, alive: 6, creep: 0.4, spawnEvery: 3, horde: true },
+    { target: 3, alive: 1, creep: 0.22, spawnEvery: 6, chargePeriod: 2.8 },
+    { target: 4, alive: 2, creep: 0.26, spawnEvery: 5, chargePeriod: 2.4 },
+    { target: 5, alive: 3, creep: 0.3, spawnEvery: 4.5, chargePeriod: 2.0 },
+    { target: 6, alive: 4, creep: 0.34, spawnEvery: 4, chargePeriod: 1.7 },
+    {
+      target: 8,
+      alive: 6,
+      creep: 0.4,
+      spawnEvery: 3,
+      horde: true,
+      chargePeriod: 1.4,
+    },
   ],
   breather: 4, // seconds between rounds
 

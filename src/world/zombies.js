@@ -68,7 +68,43 @@ function prepareClip(clip, name, travel) {
   return clip;
 }
 
-export async function createZombies(THREE, scene, baseUrl) {
+// Phones cannot hold the 2048 px maps of several characters; shrink them like the sister game does.
+function shrinkTextures(root, maxSize) {
+  if (!maxSize) return;
+  const done = new Set();
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    for (const m of Array.isArray(o.material) ? o.material : [o.material])
+      for (const key of [
+        "map",
+        "normalMap",
+        "roughnessMap",
+        "metalnessMap",
+        "aoMap",
+        "emissiveMap",
+      ]) {
+        const tex = m[key];
+        const img = tex && tex.image;
+        if (!img || done.has(tex) || !(img.width > maxSize)) continue;
+        done.add(tex);
+        const k = maxSize / Math.max(img.width, img.height);
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * k);
+        c.height = Math.round(img.height * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        if (typeof img.close === "function") img.close();
+        tex.image = c;
+        tex.needsUpdate = true;
+      }
+  });
+}
+
+export async function createZombies(
+  THREE,
+  scene,
+  baseUrl,
+  { maxTexture = 0 } = {},
+) {
   const loader = new GLTFLoader();
   const assetUrl = (file) => baseUrl + DIR + file;
   const frozenColor = new THREE.Color(FROZEN_COLOR);
@@ -94,6 +130,7 @@ export async function createZombies(THREE, scene, baseUrl) {
   async function loadCharacter(file) {
     const gltf = await loadGltf(file);
     const scene = gltf.scene;
+    shrinkTextures(scene, maxTexture);
     scene.updateMatrixWorld(true); // measure the model as it sits in the file
     const box = new THREE.Box3().setFromObject(scene);
     const height = box.max.y - box.min.y || 1;

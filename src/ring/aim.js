@@ -26,7 +26,8 @@ export function createAim(element, tune) {
   }
 
   // 0 → 1 → 0 over one chargePeriod.
-  const meterAt = (t) => 1 - Math.abs(2 * ((t / T.chargePeriod) % 1) - 1);
+  let period = T.chargePeriod; // each round sets its own (setPeriod)
+  const meterAt = (t) => 1 - Math.abs(2 * ((t / period) % 1) - 1);
 
   function cancel() {
     if (touchId !== null) {
@@ -135,6 +136,9 @@ export function createAim(element, tune) {
     set enabled(v) {
       enabled = !!v;
       if (!enabled) cancel();
+    },
+    setPeriod(seconds) {
+      if (seconds > 0) period = seconds;
     },
     update(dt) {
       if (source) {

@@ -319,5 +319,29 @@ export function createHud(root, t) {
     toastEl.classList.add("show");
   }
 
-  return { showTitle, showOver, showWon, hideMenus, update, toast };
+  // Start waits for the zombies: a run with invisible zombies is unplayable.
+  function setLoading(loading) {
+    startBtn.disabled = !!loading;
+    startBtn.textContent = t(loading ? "title.loading" : "title.start");
+  }
+
+  // A short error line kept on screen, so a phone tester can screenshot what went wrong.
+  const errorEl = el("div", "hud-error");
+  errorEl.hidden = true;
+  root.append(errorEl);
+  function showError(text) {
+    errorEl.hidden = false;
+    errorEl.textContent = String(text).slice(0, 300);
+  }
+
+  return {
+    showTitle,
+    showOver,
+    showWon,
+    hideMenus,
+    update,
+    toast,
+    setLoading,
+    showError,
+  };
 }
