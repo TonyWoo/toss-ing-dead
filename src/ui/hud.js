@@ -297,7 +297,7 @@ export function createHud(root, t) {
     }
 
     // 蓄力条只在桌面按住时显示；触屏是甩动，没有蓄力过程
-    const charging = !!aim.holding && !aim.touch;
+    const charging = !!aim.holding;
     if (charging !== shown.charging) {
       shown.charging = charging;
       power.hidden = !charging;

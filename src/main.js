@@ -70,12 +70,12 @@ camera.add(handRing);
 scene.add(camera);
 
 // aim preview: a row of small dots along the first part of the arc
-const DOTS = 18;
-const dotGeo = new THREE.SphereGeometry(0.012, 6, 4);
+const DOTS = 28;
+const dotGeo = new THREE.SphereGeometry(0.009, 6, 4);
 const dotMat = new THREE.MeshBasicMaterial({
   color: 0xfff1c9,
   transparent: true,
-  opacity: 0.7,
+  opacity: 0.45,
   depthWrite: false,
 });
 const dots = Array.from({ length: DOTS }, () => {
@@ -84,6 +84,21 @@ const dots = Array.from({ length: DOTS }, () => {
   scene.add(d);
   return d;
 });
+
+// where the ring will come down (ignoring the small random wobble of a real throw)
+const marker = new THREE.Mesh(
+  new THREE.RingGeometry(TUNE.ring.inner, TUNE.ring.outer, 40),
+  new THREE.MeshBasicMaterial({
+    color: 0xffd27a,
+    transparent: true,
+    opacity: 0.85,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  }),
+);
+marker.rotation.x = -Math.PI / 2;
+marker.visible = false;
+scene.add(marker);
 
 let cooldown = 0;
 aim.onThrow = (yaw, charge) => {
@@ -151,11 +166,17 @@ function updatePreview() {
     );
     dots.forEach((d, i) => {
       const p = pts[i];
-      // the first few points sit right at the hand and would blot out the view
-      d.visible = !!p && i >= 3;
+      // points near the hand rise past the lens and would blot out the view
+      d.visible = !!p && Math.hypot(p.x - origin[0], p.z - origin[2]) > 1.3;
       if (p) d.position.set(p.x, p.y, p.z);
     });
-  } else dots.forEach((d) => (d.visible = false));
+    const end = pts[pts.length - 1];
+    marker.visible = !!end;
+    if (end) marker.position.set(end.x, 0.012, end.z);
+  } else {
+    dots.forEach((d) => (d.visible = false));
+    marker.visible = false;
+  }
   handRing.visible = run.canThrow() && cooldown <= 0.15;
 }
 
@@ -257,6 +278,13 @@ function frame() {
 }
 
 hud.showTitle(start);
-window.__G = { run, TUNE, aim, field: () => field, rings: () => flying };
+window.__G = {
+  run,
+  TUNE,
+  aim,
+  marker,
+  field: () => field,
+  rings: () => flying,
+};
 window.__ready = true;
 requestAnimationFrame(frame);

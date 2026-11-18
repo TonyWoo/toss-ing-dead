@@ -152,6 +152,11 @@ export async function createZombies(THREE, scene, baseUrl) {
     const own = (m) => {
       const c = m.clone();
       c.transparent = true; // needed while fading in and out
+      // the street is dark and the dead come from the fog: a faint self-light keeps them readable
+      if (c.emissive) {
+        if (c.map && !c.emissiveMap) c.emissiveMap = c.map;
+        c.emissive.setRGB(0.62, 0.58, 0.72);
+      }
       mats.push({ m: c, base: c.emissive ? c.emissive.clone() : null });
       return c;
     };

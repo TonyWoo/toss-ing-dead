@@ -532,7 +532,7 @@ export function createStage(THREE, scene, renderer) {
   scene.add(lampL, lampR);
 
   // ---- lights: 4 in total (hemisphere, dusk sun, two stall lamps) ----
-  const hemi = new THREE.HemisphereLight(0x7d8fc4, 0x231a16, 0.55);
+  const hemi = new THREE.HemisphereLight(0x7d8fc4, 0x231a16, 0.8);
   scene.add(hemi);
   // 傍晚最后一道光：从街尽头低角度照过来，沿街打在湿地面上
   const sun = new THREE.DirectionalLight(0xff9c52, 2.0);

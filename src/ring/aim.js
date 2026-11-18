@@ -1,14 +1,11 @@
 // Pointer and keyboard input → yaw and charge for one throw. DOM only, no THREE.
 // Mouse and Space: yaw follows the pointer's x; a hold charges on a ping-pong meter; release throws.
-// Touch: drag sets yaw; release throws with the upward flick speed measured over the last ~120 ms.
+// Touch: same hold-to-charge meter; dragging sideways turns the aim from where it was (the thumb
+// can rest anywhere), release throws. A flick was tried first: its strength could not be previewed.
 
 const DEG = Math.PI / 180;
-// Flick speed is measured over this much recent movement.
-const FLICK_WINDOW_MS = 120;
-// Pointer history kept for the flick; a little longer than the window.
-const TRAIL_MS = 250;
-// Weaker flicks do not throw, so a slow drag does not waste a ring.
-const FLICK_MIN = 0.15;
+// Screen widths of sideways drag that sweep the aim from one limit to the other.
+const DRAG_SPAN = 0.8;
 
 export function createAim(element, tune) {
   const T = tune.throw;
@@ -17,9 +14,8 @@ export function createAim(element, tune) {
   let source = null; // "mouse" | "key" | "touch" while a hold is active
   let touchId = null;
   let holdT = 0; // seconds the mouse or Space hold has run
-  let trail = []; // {t, y} of the touch pointer, for the flick
-
-  const now = () => performance.now();
+  let dragX = 0; // where the touch started, and the aim it started from
+  let dragYaw = 0;
 
   // Pointer x relative to the centre of the element; ±half width is ±yawMaxDeg.
   function yawFromX(clientX) {
@@ -32,19 +28,6 @@ export function createAim(element, tune) {
   // 0 → 1 → 0 over one chargePeriod.
   const meterAt = (t) => 1 - Math.abs(2 * ((t / T.chargePeriod) % 1) - 1);
 
-  // Upward speed over the last FLICK_WINDOW_MS, in screen heights per second, divided by flickFull.
-  function flickCharge(at) {
-    const recent = trail.filter((p) => p.t >= at - FLICK_WINDOW_MS);
-    if (recent.length < 2) return 0;
-    const a = recent[0];
-    const b = recent[recent.length - 1];
-    const dt = (b.t - a.t) / 1000;
-    if (dt <= 0) return 0;
-    const screenH = window.innerHeight || 1;
-    const perSec = (a.y - b.y) / screenH / dt;
-    return Math.max(0, perSec / T.flickFull);
-  }
-
   function cancel() {
     if (touchId !== null) {
       try {
@@ -55,7 +38,6 @@ export function createAim(element, tune) {
     }
     source = null;
     touchId = null;
-    trail = [];
     holdT = 0;
     state.holding = false;
     state.touch = false;
@@ -80,8 +62,9 @@ export function createAim(element, tune) {
       } catch {
         // capture is a nicety; the window listeners still see the moves
       }
-      trail = [{ t: now(), y: e.clientY }];
-      state.yaw = yawFromX(e.clientX);
+      holdT = 0;
+      dragX = e.clientX;
+      dragYaw = state.yaw;
       state.holding = true;
       state.touch = true;
     } else if (e.button === 0) {
@@ -98,10 +81,10 @@ export function createAim(element, tune) {
     if (e.pointerType === "touch") {
       if (source !== "touch" || e.pointerId !== touchId) return;
       e.preventDefault();
-      state.yaw = yawFromX(e.clientX);
-      const t = now();
-      trail.push({ t, y: e.clientY });
-      trail = trail.filter((p) => p.t >= t - TRAIL_MS);
+      const w = element.getBoundingClientRect().width || 1;
+      const max = T.yawMaxDeg * DEG;
+      const turn = ((e.clientX - dragX) / (w * DRAG_SPAN)) * 2 * max;
+      state.yaw = Math.min(max, Math.max(-max, dragYaw + turn));
     } else if (source !== "touch") {
       // Desktop: the pointer aims even when it is not held.
       state.yaw = yawFromX(e.clientX);
@@ -111,12 +94,9 @@ export function createAim(element, tune) {
   function onPointerUp(e) {
     if (source === "touch") {
       if (e.pointerId !== touchId) return;
-      const t = now();
-      trail.push({ t, y: e.clientY });
-      const raw = flickCharge(t);
-      release(Math.min(1, raw), raw >= FLICK_MIN);
+      release(state.charge, true); // the charge on screen, so the throw matches the preview
     } else if (source === "mouse" && e.button === 0) {
-      release(meterAt(holdT), true);
+      release(state.charge, true); // the charge on screen, so the throw matches the preview
     }
   }
 
@@ -138,7 +118,7 @@ export function createAim(element, tune) {
   function onKeyUp(e) {
     if (e.code !== "Space" || source !== "key") return;
     e.preventDefault();
-    release(meterAt(holdT), true);
+    release(state.charge, true); // the charge on screen, so the throw matches the preview
   }
 
   // A hold that loses the window (alt-tab) is dropped rather than thrown.
@@ -157,12 +137,9 @@ export function createAim(element, tune) {
       if (!enabled) cancel();
     },
     update(dt) {
-      if (source === "mouse" || source === "key") {
+      if (source) {
         holdT += dt;
         state.charge = meterAt(holdT);
-      } else if (source === "touch") {
-        // Live: the bar shows the flick strength as the finger moves.
-        state.charge = Math.min(1, flickCharge(now()));
       }
     },
     destroy() {

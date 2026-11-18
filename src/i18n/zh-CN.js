@@ -7,7 +7,7 @@ export default {
   "title.tagline": "三圈十蚊，套不中就被抓。",
   "title.start": "开档",
   "title.help.mouse": "移动鼠标瞄准 · 按住蓄力 · 松开出手",
-  "title.help.touch": "左右拖动瞄准 · 向上一甩出手",
+  "title.help.touch": "按住蓄力 · 左右拖动瞄准 · 松开出手",
 
   // ---- 收档（失败）----
   "over.stamp": "收档",
