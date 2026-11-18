@@ -63,14 +63,15 @@ function makeRingMesh() {
 
 // the ring waiting in the hand, in camera space so it moves with the view
 const handRing = new THREE.Mesh(ringGeo, ringMat);
-handRing.position.set(0.24, -0.3, -0.62);
-handRing.rotation.set(1.15, 0, 0.25);
+handRing.position.set(0.34, -0.34, -0.85);
+handRing.rotation.set(0.9, 0.2, 0.35);
+handRing.scale.setScalar(0.8);
 camera.add(handRing);
 scene.add(camera);
 
 // aim preview: a row of small dots along the first part of the arc
 const DOTS = 18;
-const dotGeo = new THREE.SphereGeometry(0.018, 6, 4);
+const dotGeo = new THREE.SphereGeometry(0.012, 6, 4);
 const dotMat = new THREE.MeshBasicMaterial({
   color: 0xfff1c9,
   transparent: true,
@@ -150,7 +151,8 @@ function updatePreview() {
     );
     dots.forEach((d, i) => {
       const p = pts[i];
-      d.visible = !!p;
+      // the first few points sit right at the hand and would blot out the view
+      d.visible = !!p && i >= 3;
       if (p) d.position.set(p.x, p.y, p.z);
     });
   } else dots.forEach((d) => (d.visible = false));
@@ -225,6 +227,9 @@ function start() {
 // ---------- frame loop ----------
 let shake = 0;
 const camBase = camera.position.clone();
+// yaw applied on top of the stage's downward look must not roll the horizon
+camera.rotation.setFromQuaternion(camera.quaternion, "YXZ");
+const camYaw0 = camera.rotation.y;
 const clock = new THREE.Clock();
 function frame() {
   const dt = Math.min(clock.getDelta(), 1 / 20);
@@ -244,13 +249,14 @@ function frame() {
     camBase.y + (Math.random() - 0.5) * shake * 0.12,
     camBase.z,
   );
-  camera.rotation.y += (-aim.state.yaw * 0.25 - camera.rotation.y) * 0.1;
+  camera.rotation.y +=
+    (camYaw0 - aim.state.yaw * 0.25 - camera.rotation.y) * 0.1;
   hud.update(run.state, aim.state);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 
 hud.showTitle(start);
-window.__G = { run, TUNE, field: () => field };
+window.__G = { run, TUNE, aim, field: () => field, rings: () => flying };
 window.__ready = true;
 requestAnimationFrame(frame);

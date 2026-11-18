@@ -40,7 +40,7 @@ ring 状态：`{ pos:{x,y,z}, vel:{x,y,z}, spin, tilt:{x,z}, bounces, state }`�
 
 - `d <= inner - r` → 事件 `{ type:"ringed", prize }`，圈的 state 变 `"ringed"`，之后 pos 吸附到奖品中心、缓缓落到地面；
 - `d < outer + r` → 擦边：事件 `{ type:"rim", prize }`，水平速度从奖品中心反射并乘 `rimBounce`，y 速度变 `+rimLift`，`bounces++`；
-  超过 `maxBounces` 后不再判擦边，只会落地；
+  擦边满 `maxBounces` 次后不再判擦边，只会落地；
 - y 降到 0（地面，圈的厚度忽略）且还在飞 → 事件 `{ type:"miss", x, z }`，state 变 `"grounded"`。
 
 风：水平 x 方向加速度 `windX`。阻力：`vel -= vel * drag * dt`。`spin` 每秒绕 Y 转，`tilt` 给画面用（飞行中轻微摇摆）。
