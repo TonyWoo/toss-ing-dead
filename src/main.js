@@ -49,9 +49,20 @@ window.addEventListener("unhandledrejection", (e) =>
 // If the models cannot load, box stand-ins take their place and the error is shown.
 let zombies = null;
 hud.setLoading(true);
-createZombies(THREE, scene, BASE, {
-  maxTexture: stage.quality === "low" ? 1024 : 0,
-})
+const LOAD_TIMEOUT = 25000; // ms: a load that neither finishes nor fails must not lock the title
+const timeout = new Promise((_, fail) =>
+  setTimeout(
+    () => fail(new Error("Zombie models still loading after 25 s")),
+    LOAD_TIMEOUT,
+  ),
+);
+Promise.race([
+  createZombies(THREE, scene, BASE, {
+    maxTexture: stage.quality === "low" ? 1024 : 0,
+    onWarning: report,
+  }),
+  timeout,
+])
   .then((z) => (zombies = z))
   .catch((e) => {
     report(e);

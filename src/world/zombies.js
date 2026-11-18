@@ -5,7 +5,8 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 
 const DIR = "assets/zombies/";
-const CHARACTERS = ["romero.glb", "girl.glb", "cop.glb"];
+// romero.glb (5.7 MB, six 2048 px maps) never finished loading on an iPhone (2026-11-18): only ~2 MB models.
+const CHARACTERS = ["girl.glb", "cop.glb", "soldier.glb"];
 const CLIPS = {
   walk: "clip_walk.glb",
   idle: "clip_idle.glb",
@@ -103,7 +104,7 @@ export async function createZombies(
   THREE,
   scene,
   baseUrl,
-  { maxTexture = 0 } = {},
+  { maxTexture = 0, onWarning = () => {} } = {},
 ) {
   const loader = new GLTFLoader();
   const assetUrl = (file) => baseUrl + DIR + file;
@@ -155,10 +156,16 @@ export async function createZombies(
     return out;
   }
 
-  const [characters, clips] = await Promise.all([
-    Promise.all(CHARACTERS.map(loadCharacter)),
+  // One character that fails is skipped (and reported); only losing all of them is fatal.
+  const [settled, clips] = await Promise.all([
+    Promise.allSettled(CHARACTERS.map(loadCharacter)),
     loadClips(),
   ]);
+  const characters = [];
+  for (const r of settled)
+    if (r.status === "fulfilled") characters.push(r.value);
+    else onWarning(r.reason);
+  if (!characters.length) throw settled[0].reason;
 
   // Crossfade to a named clip; the walk action keeps its timeScale across switches.
   function play(rec, name) {
@@ -172,7 +179,7 @@ export async function createZombies(
   }
 
   function spawn(item) {
-    const tpl = characters[charIndex(item.id)];
+    const tpl = characters[charIndex(item.id) % characters.length];
     const model = clone(tpl.scene);
     // The pivot carries the lunge lean, so the model keeps its own transform.
     const pivot = new THREE.Group();
